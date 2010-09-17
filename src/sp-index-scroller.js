@@ -1,7 +1,7 @@
 Ext.ns('Surveypie');
 
 Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
-    cmpCls: 'x-indexbar',
+    cmpCls: 'x-indexscroller',
     direction: 'vertical',
     tpl: '',
     itemSelector: 'null',

@@ -1,19 +1,20 @@
-.x-indexbar {
+.x-indexscroller {
   padding: 0 5px;
   width: 35px;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-box-align: stretch;
   -webkit-box-pack: center; }
-  .x-indexbar.x-indexbar-vertical > .x-panel-body {
+  .x-indexscroller.x-indexscroller-vertical > .x-panel-body {
     padding: 5px 0;
     -webkit-border-radius: 17.5px;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-box-align: center; }
-  .x-indexbar.x-indexbar-pressed > .x-panel-body {
+    -webkit-box-align: center;
     background-color: rgba(0, 0, 0, 0.2); }
-  .x-indexbar span.x-indexbar-item {
+  .x-indexscroller.x-indexscroller-pressed > .x-panel-body {
+    background-color: rgba(0, 0, 0, 0.4); }
+  .x-indexscroller span.x-indexscroller-item {
     color: #666;
     font-size: 0.6em;
     font-weight: bold;
