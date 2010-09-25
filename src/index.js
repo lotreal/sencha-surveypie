@@ -1,31 +1,39 @@
-Ext.ns('sink', 'demos', 'Ext.ux');
+Ext.ns('Surveypie', 'Surveypie.ui', 'Surveypie.data');
 
 Ext.regModel('Surveypie', {
     fields: ['id', 'subject', 'require', 'intro', 'form']
 });
 
-demos.ListStore = new Ext.data.Store({
+Ext.regModel('Part', {
+    fields: ['type', 'sn', 'parent_sn', '', '', '', 'subject', 'require', 'intro', 'form']
+});
+
+Surveypie.data.Bridge = function(define) {
+    var parts = define.parts, parts_array = [];
+    for (sn in parts) {
+        parts_array.push(parts[sn]);
+    }
+};
+
+Surveypie.data.Bridge(response);
+
+Surveypie.data.PartStore = new Ext.data.Store({
     model: 'Surveypie',
     // sorters: 'firstName',
     getGroupString : function(record) {
-        return record.get('id') + '. ' + record.get('subject');
+        return record.get('sn');
     },
     data: [
-        {id: '1', subject: '姓名', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '2', subject: '姓名', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '3', subject: '姓名', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '4', subject: '姓名', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '5', subject: '请你打分', require: true, intro: '请认真填写', form: matrix },
-        {id: '6', subject: '你喜欢什么', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '7', subject: '你喜欢什么', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '8', subject: '你喜欢什么', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'},
-        {id: '9', subject: '你喜欢什么', require: true, intro: '请输入你的中文名字', form: '<input type="text" />'}
+        part1,
+        part2,
+        part3,
+        {sn: '5', subject: '请你打分', require: true, intro: '请认真填写', html: matrix }
     ]
 });
 
 
-demos.List = new Ext.Panel({
-    layout: Ext.is.Phone ? 'fit' : {
+Surveypie.ui.Page = new Ext.Panel({
+    layout: Ext.is.Phone || true ? 'fit' : {
         type: 'vbox',
         align: 'center',
         pack: 'center'
@@ -35,14 +43,18 @@ demos.List = new Ext.Panel({
         width: 300,
         height: 500,
         xtype: 'sp_list',
-        // disclosure: {
-        //     scope: demos.ListStore,
-        //     handler: function(record, btn, index) {
-        //         alert('Disclose more info for ' + record.get('firstName'));
-        //     }
-        // },
-        store: demos.ListStore,
-        tpl: '<tpl for="."><div class="part"><div class="intro">{intro}</div><div class="form-element">{form}</div></div></tpl>',
+        store: Surveypie.data.PartStore,
+        tpl: '<tpl for="."><div class="part"><div class="intro">{intro}</div><div class="form-element">{html}</div></div></tpl>',
+        groupTpl : [
+            '<tpl for=".">',
+            '<div class="x-list-group x-group-{id}">',
+            '<h3 class="x-list-header"><b class="x-list-group-sn"></b>{subject}</h3>',
+            '<div class="x-list-group-items">',
+            '{items}',
+            '</div>',
+            '</div>',
+            '</tpl>'
+        ],
         itemSelector: 'div.part',
         //singleSelect: true,
         grouped: true,
@@ -50,24 +62,35 @@ demos.List = new Ext.Panel({
     }]
 });
 
-Ext.ux.UniversalUI = Ext.extend(Ext.Panel, {
+Surveypie.ui.Main = Ext.extend(Ext.Panel, {
     fullscreen: true,
     layout: 'card',
-    items: [],
+    items: [{
+        html: 'loading...'
+    }],
     initComponent : function() {
+        this.submitButton = new Ext.Button({
+            text: 'Submit ',
+            ui: 'forward',
+            scope: this
+        });
+
+
+        var btns = [{xtype: 'spacer'}, this.submitButton];
+
         this.navigationBar = new Ext.Toolbar({
             ui: 'dark',
             dock: 'top',
             title: this.title,
-            items: [].concat(this.buttons || [])
+            items: btns.concat(this.buttons || [])
         });
         
         this.dockedItems = this.dockedItems || [];
         this.dockedItems.unshift(this.navigationBar);
         
         this.addEvents('navigate');
-        
-        Ext.ux.UniversalUI.superclass.initComponent.call(this);
+        //console.log(this.navigationBar.titleEl);
+        Surveypie.ui.Main.superclass.initComponent.call(this);
     },
     
     onListChange : function(list, item) {
@@ -86,11 +109,10 @@ Ext.ux.UniversalUI = Ext.extend(Ext.Panel, {
     }
 });
 
-sink.Main = {
+Surveypie.Main = {
     init : function() {
-        this.ui = new Ext.ux.UniversalUI({
-            title: Ext.is.Phone ? 'Sink' : 'Kitchen Sink'
-            //navigationItems: sink.Structure
+        this.ui = new Surveypie.ui.Main({
+            title: Ext.is.Phone ? 'Surveypie' : 'Kitchen Surveypie'
         });
     }
 };
@@ -102,7 +124,7 @@ Ext.setup({
     glossOnIcon: false,
     
     onReady: function() {
-        sink.Main.init();
-        sink.Main.ui.onListChange(sink.Main.ui.navigationPanel, {text: 'Surveys', card: demos.List});
+        Surveypie.Main.init();
+        Surveypie.Main.ui.onListChange(Surveypie.Main.ui.navigationPanel, {text: 'Surveys: About this surveys is very very very funny. XD', card: Surveypie.ui.Page});
     }
 });

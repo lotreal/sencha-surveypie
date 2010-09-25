@@ -5,12 +5,6 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
     direction: 'vertical',
     tpl: '',
     itemSelector: 'null',
-    
-    /**
-     * @cfg {Array} letters
-     * The letters to show on the index bar. Defaults to the English alphabet, A-Z.
-     */
-    letters: ['1', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'],
 
     // @private
     initComponent : function() {
@@ -36,7 +30,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
         }
 
         this.addEvents('index');
-
+        this.on('sync', this.syncTick);
         Surveypie.IndexScroller.superclass.initComponent.call(this);
     },
 
@@ -54,6 +48,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
         else if (this.horizontal) {
             this.el.addClass(this.cmpCls + '-horizontal');
         }
+        console.log('afterrender');
     },
 
     initTicks: function() {
@@ -117,21 +112,6 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
     },
 
     // @private
-    loadAlphabet : function() {
-        var letters = this.letters,
-            len = letters.length,
-            data = [],
-            i, letter;
-
-        for (i = 0; i < len; i++) {
-            letter = letters[i];
-            data.push({key: letter.toLowerCase(), value: letter});
-        }
-
-        this.store.loadData(data);
-    },
-
-    // @private
     initEvents : function() {
         Surveypie.IndexScroller.superclass.initEvents.call(this);
         this.mon(this.body, {
@@ -175,8 +155,12 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
             percent = (e.pageX - pageBox.right) / (pageBox.width);
         }
         sn = Math.floor(( 2 * percent * n * n + n) / (2 * n)) + 1;
-        console.log('index', sn, percent);
+        console.log('index', sn);
         me.fireEvent('index', sn, percent);
+    },
+
+    syncTick: function() {
+        //console.log(arguments);
     }
 });
 
