@@ -48,15 +48,17 @@ Surveypie.List = Ext.extend(Ext.List, {
         Ext.each(parts, function(part) {
             new Ext.util.Scroller(part, {vertical: false, horizontal: true});
         });
+        this.setPartNumber();
 
-        var sn = this.el.query('.x-list-group-sn');
-        Ext.each(sn, function(el, index) {
-            el.innerText = (index+1) + '.';
-        });
-
-        console.log('afterRender sp-list:', sn);
         this.groups = this.el.select('.x-list-group');
         console.log('groups', this.groups);
+    },
+
+    setPartNumber: function() {
+        var sn = this.el.query('.x-list-group-sn');
+        Ext.each(sn, function(el, index) {
+            el.innerText = ( index + 1 ) + '. ';
+        });
     },
 
     // afterLayout : function() {
