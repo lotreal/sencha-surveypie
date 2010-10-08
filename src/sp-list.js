@@ -48,17 +48,57 @@ Surveypie.List = Ext.extend(Ext.List, {
         Ext.each(parts, function(part) {
             new Ext.util.Scroller(part, {vertical: false, horizontal: true});
         });
-        this.setPartNumber();
+
+        this.parts = this.el.select('.part');
+        this.nums = this.el.select('.part-num');
 
         this.groups = this.el.select('.x-list-group');
         console.log('groups', this.groups);
+
+        console.log('el', this, this.el);
+        this.el.on('click', function(e, t) {
+            if (!(/input/i.test(t.tagName))) return;
+
+            var target = Ext.get(t),
+                part = target.parent('.part');
+
+            if (part && part.hasClass('select')) {
+                var option_sn = target.id;
+                this.survey.triggering(option_sn);
+            }
+
+            // this.ui2.updateGuideButton();
+        }, this);
+
+        this.survey.addListener('changeVisibility', function(part) {
+            if (part.type !== 'page') {
+                var el = Ext.get(part.sn);
+                el.setStyle('display', part.visibility ? '' : 'none');
+                this.updateOffsets();
+                this.setPartNumber();
+            }
+        }, this);
+
+        this.setPartNumber();
+    },
+
+    showPart: function(sn) {
+        var type = this.survey.getPartType(sn);
+        if (type == 'page') {
+            this.survey.getPage(sn).visibility = true;
+        } else {
+            var part = Ext.get(sn);
+            part.setStyle('display', '');
+        }
     },
 
     setPartNumber: function() {
-        var sn = this.el.query('.x-list-group-sn');
-        Ext.each(sn, function(el, index) {
-            el.innerText = ( index + 1 ) + '. ';
-        });
+        var sn = 1;
+        this.parts.each(function(el, c, idx) {
+            if (el.getStyle('display') != 'none') {
+                this.nums.item(idx).setHTML((sn++) + '. ');
+            }
+        }, this);
     },
 
     // afterLayout : function() {
@@ -114,16 +154,6 @@ Surveypie.List = Ext.extend(Ext.List, {
         }
     },
 
-    getGroupId : function(group) {
-        return group.name;
-    },
-
-
-    getGroupSubject: function(group) {
-        console.log('getGroupSubject:group:', group);
-        return group.children[0].subject;
-    },
-
     setActiveGroup : function(group) {
         var _activeGroup = this.activeGroup;
         Surveypie.List.superclass.setActiveGroup.apply(this, arguments);
@@ -141,25 +171,18 @@ Surveypie.List = Ext.extend(Ext.List, {
         }
 
         var results = [],
-            groups = this.store.getGroups(),
-            ln = groups.length,
-            children, cln, c,
-            group, i;
+            itemTpl = this.itemTpl;
 
-        for (i = 0, ln = groups.length; i < ln; i++) {
-            group = groups[i];
-            children = group.children;
-            for (c = 0, cln = children.length; c < cln; c++) {
-                children[c] = children[c].data;
-            }
+        this.store.each(function(record) {
             results.push({
-                group: group.name,
-                id: this.getGroupId(group),
-                subject: this.getGroupSubject(group),
-                items: this.itemTpl.apply(children)
+                group: record.get('subject'),
+                sn: record.get('sn'),
+                type: record.get('type'),
+                subject: record.get('subject'),
+                items: itemTpl.apply(record.data),
+                visibility: record.get('visibility')
             });
-        }
-
+        });
         return results;
     }
 });
