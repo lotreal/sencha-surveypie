@@ -111,18 +111,22 @@ Surveypie.List = Ext.extend(Ext.List, {
         if (this.grouped) {
             this.groupOffsets = [];
 
-            var headers = this.body.query('h3.x-list-header'),
+            var headers = this.body.query('h3.question-subject'),
                 ln = headers.length,
                 header, i;
 
             for (i = 0; i < ln; i++) {
                 header = Ext.get(headers[i]);
                 header.setDisplayMode(Ext.Element.VISIBILITY);
+                var top = header.dom.offsetTop;
+                if (i > 0 && top == 0) continue;
                 this.groupOffsets.push({
                     header: header,
-                    offset: header.dom.offsetTop
+                    offset: top
                 });
             }
+
+            console.log('offsets', this.groupOffsets);
         }
     },
 

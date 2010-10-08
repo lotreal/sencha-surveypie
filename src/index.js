@@ -244,7 +244,7 @@ Surveypie.ui.Page = Ext.extend(Ext.Panel, {
             groupTpl : [
                 '<tpl for=".">',
                 '<div class="x-list-group part {type}" id="{sn}" <tpl if="!visibility">style="display:none;"</tpl>>',
-                '<h3 class="x-list-header"><b class="part-num"></b>{subject}</h3>',
+                '<h3 class="x-list-header question-subject"><b class="part-num"></b>{subject}</h3>',
                 '<div class="x-list-group-items">',
                 '{items}',
                 '</div>',
