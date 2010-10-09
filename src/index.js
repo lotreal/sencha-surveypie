@@ -278,6 +278,11 @@ Surveypie.ui.Survey = Ext.extend(Ext.Panel, {
             scope: this
         });
 
+        var submitConfig = {
+            items: [{html: 'captcha'}]
+        };
+        this.submitPanel = new Ext.Panel(submitConfig);
+
 
         var btns = [{xtype: 'spacer'}, this.guideButton];
 
@@ -341,6 +346,7 @@ Surveypie.ui.Survey = Ext.extend(Ext.Panel, {
     },
 
     onSubmit: function() {
+        this.setCard(this.submitPanel);
     }
 });
 

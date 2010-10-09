@@ -1,6 +1,6 @@
 Ext.ns('Surveypie');
 
-Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
+Surveypie.IndexScroller = Ext.extend(Ext.Panel, {
     cmpCls: 'x-indexscroller',
     direction: 'vertical',
     tpl: '',
@@ -8,19 +8,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
 
     // @private
     initComponent : function() {
-        // No docking and no sizing of body!
         this.componentLayout = new Ext.layout.AutoComponentLayout();
-        // this.componentLayout.setTargetSize(100, 100);
-
-        if (!this.store) {
-            this.store = new Ext.data.Store({
-                model: 'IndexBarModel'
-            });
-        }
-
-        if (this.alphabet == true) {
-            this.ui = this.ui || 'alphabet';
-        }
 
         if (this.direction == 'horizontal') {
             this.horizontal = true;
@@ -30,17 +18,14 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
         }
 
         this.addEvents('index');
-        this.on('sync', this.syncTick);
+        this.on('updateIndex', this.updateIndexer);
+        this.on('syncIndex', this.syncTick);
         Surveypie.IndexScroller.superclass.initComponent.call(this);
     },
 
     // @private
     afterRender : function() {
         Surveypie.IndexScroller.superclass.afterRender.call(this);
-
-        // if (this.alphabet === true) {
-        //     this.loadAlphabet();
-        // }
 
         if (this.vertical) {
             this.el.addClass(this.cmpCls + '-vertical');
@@ -51,8 +36,29 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
         console.log('afterrender');
     },
 
-    initTicks: function() {
-        if (this.tick_inited) return;
+    // @private
+    initEvents : function() {
+        Surveypie.IndexScroller.superclass.initEvents.call(this);
+        this.mon(this.body, {
+            touchstart: this.onTouchStart,
+            touchend: this.onTouchEnd,
+            touchmove: this.onTouchMove,
+            scope: this
+        });
+    },
+
+    afterLayout : function(layout) {
+        Surveypie.IndexScroller.superclass.afterLayout.call(this, layout);
+        if (this.indexDict) this.updateIndexer(this.indexDict);
+    },
+
+    updateIndexer: function(dict) {
+        this.indexDict = dict;
+        this.initTicks(dict);
+        console.log('update indexer', dict.count);
+    },
+
+    initTicks: function(dict) {
         var body = this.getTargetEl(),
             body_margin = 25,
             body_height = this.el.getHeight() - body_margin * 2,
@@ -68,7 +74,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
                 height: canvas_height
             }),
             canvas = tick.dom,
-            tick_count = this.store.getAt(0).get('count'),
+            tick_count = dict.count,
             tick_margin = 10,
             step = (canvas_height - tick_margin * 2) / (tick_count - 1);
         console.log('create tick');
@@ -88,38 +94,13 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
             ctx.strokeStyle = '#f00';
             for (var i = 0, n = tick_count; i < n; i++) {
                 ctx.beginPath();
-                ctx.arc(25/2, tick_margin + i * step, 3,0,Math.PI*2,true); // Outer circle;
+                ctx.arc(25/2, tick_margin + i * step, 6, 0, Math.PI*2,true); // Outer circle;
                 //ctx.stroke();
                 ctx.fill();
                 ctx.closePath();
                 //ctx.moveTo(0, 0);
             }
         }
-
-        this.tick_inited = false;
-    },
-
-    // @private
-    afterLayout : function(layout) {
-        Surveypie.IndexScroller.superclass.afterLayout.call(this, layout);
-        this.initTicks();
-    },
-
-    refresh: function() {
-        Surveypie.IndexScroller.superclass.refresh.call(this);
-        // if (!this.layout.layedOut) return;
-        // console.log(this.store.getAt(0).get('subject'));
-    },
-
-    // @private
-    initEvents : function() {
-        Surveypie.IndexScroller.superclass.initEvents.call(this);
-        this.mon(this.body, {
-            touchstart: this.onTouchStart,
-            touchend: this.onTouchEnd,
-            touchmove: this.onTouchMove,
-            scope: this
-        });
     },
 
     // @private
@@ -138,7 +119,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
     // @private
     onTouchMove : function(e) {
         var me = this,
-            n = this.store.getAt(0).get('count') - 1,
+            n = this.indexDict.count - 1,
             pageBox = this.tick_pagebox,
             percent, sn;
 
@@ -154,13 +135,16 @@ Surveypie.IndexScroller = Ext.extend(Ext.DataPanel, {
             }
             percent = (e.pageX - pageBox.right) / (pageBox.width);
         }
+        if (isNaN(percent)) return;
+
         sn = Math.floor(( 2 * percent * n * n + n) / (2 * n)) + 1;
-        console.log('index', sn);
+
+        console.log('index', sn, n , this.indexDict, pageBox);
         me.fireEvent('index', sn, percent);
     },
 
-    syncTick: function() {
-        //console.log(arguments);
+    syncTick: function(ui, index) {
+        console.log('sync tick', index);
     }
 });
 

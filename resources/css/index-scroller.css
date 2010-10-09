@@ -11,7 +11,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-box-align: center;
-    background-color: rgba(0, 0, 0, 0.1); }
+    background-color: rgba(0, 0, 0, 0.6); }
   .x-indexscroller.x-indexscroller-pressed > .x-panel-body {
     background-color: rgba(0, 0, 0, 0.4); }
   .x-indexscroller span.x-indexscroller-item {

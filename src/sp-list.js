@@ -5,12 +5,12 @@ Surveypie.List = Ext.extend(Ext.List, {
     initComponent : function() {
         if (this.indexer) {
             this.indexBar = false;
-            this.indexStore = new Ext.data.Store({
-                fields: ['count'],
-                data : [
-                    {count: this.store.getCount()}
-                ]
-            });
+            // this.indexStore = new Ext.data.Store({
+            //     fields: ['count'],
+            //     data : [
+            //         {count: this.store.getCount()}
+            //     ]
+            // });
 
             var indexerConfig = Ext.apply(
                 {}, 
@@ -18,8 +18,8 @@ Surveypie.List = Ext.extend(Ext.List, {
                     xtype: 'indexbar',
                     dock: 'right',
                     overlay: true,
-                    alphabet: true,
-                    store: this.indexStore
+                    alphabet: true//,
+                    //store: this.indexStore
                 });
 
             this.indexer = Ext.ComponentMgr.create(indexerConfig);
@@ -52,8 +52,8 @@ Surveypie.List = Ext.extend(Ext.List, {
         this.parts = this.el.select('.part');
         this.nums = this.el.select('.part-num');
 
-        this.groups = this.el.select('.x-list-group');
-        console.log('groups', this.groups);
+        // this.groups = this.el.select('.x-list-group');
+        // console.log('groups', this.groups);
 
         console.log('el', this, this.el);
         this.el.on('click', function(e, t) {
@@ -111,21 +111,28 @@ Surveypie.List = Ext.extend(Ext.List, {
         if (this.grouped) {
             this.groupOffsets = [];
 
-            var headers = this.body.query('h3.question-subject'),
-                ln = headers.length,
-                header, i;
+            var groups = this.body.query('.x-list-group'),
+                headers = this.body.query('h3.question-subject'),
+                ln = groups.length,
+                group, header, i, k = 0;
 
             for (i = 0; i < ln; i++) {
+                group = Ext.get(groups[i]);
+                if (group.getStyle('display') == 'none') continue;
+                k++;
                 header = Ext.get(headers[i]);
                 header.setDisplayMode(Ext.Element.VISIBILITY);
                 var top = header.dom.offsetTop;
-                if (i > 0 && top == 0) continue;
                 this.groupOffsets.push({
+                    group: group,
                     header: header,
                     offset: top
                 });
             }
 
+            if (k !== this.visibeGroupNum && this.indexer)
+                this.indexer.fireEvent('updateIndex', {count:k});
+            this.visibeGroupNum = k;
             console.log('offsets', this.groupOffsets);
         }
     },
@@ -148,7 +155,7 @@ Surveypie.List = Ext.extend(Ext.List, {
     onIndex : function(sn, percent) {
         sn = sn - 1;
         if (this.current_gourp_sn == sn) return;
-        closest = this.groups.item(sn);
+        closest = this.groupOffsets[sn].group;
         if (closest) {
             try {
                 this.scroller.scrollTo({x: 0, y: closest.getOffsetsTo(this.scrollEl)[1]}, false, null, true);
@@ -162,9 +169,9 @@ Surveypie.List = Ext.extend(Ext.List, {
         var _activeGroup = this.activeGroup;
         Surveypie.List.superclass.setActiveGroup.apply(this, arguments);
         if (group) {
-            var active_idx = this.groups.indexOf(group.header.parent());
-            if (this.grouped && this.indexer && _activeGroup == this.activeGroup)
-                this.indexer.fireEvent('sync', this, active_idx);
+            var active_idx = this.groupOffsets.indexOf(group);
+            if (this.grouped && this.indexer && _activeGroup !== this.activeGroup)
+                this.indexer.fireEvent('syncIndex', this, active_idx);
         }
     },
 
