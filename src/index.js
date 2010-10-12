@@ -346,7 +346,14 @@ Surveypie.ui.Survey = Ext.extend(Ext.Panel, {
     },
 
     onSubmit: function() {
-        this.setCard(this.submitPanel);
+        (new Ext.MessageBox()).show({
+            title : 'Please enter code:',
+            msg : '<img id="captcha_img" src="/survey/captcha?t=1286766312749">Click image to try another',
+            buttons: Ext.MessageBox.OKCANCEL,
+            fn: Ext.emptyFn,
+            icon  : Ext.MessageBox.QUESTION,
+            prompt: true
+        });
     }
 });
 

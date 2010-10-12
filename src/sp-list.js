@@ -5,21 +5,12 @@ Surveypie.List = Ext.extend(Ext.List, {
     initComponent : function() {
         if (this.indexer) {
             this.indexBar = false;
-            // this.indexStore = new Ext.data.Store({
-            //     fields: ['count'],
-            //     data : [
-            //         {count: this.store.getCount()}
-            //     ]
-            // });
-
             var indexerConfig = Ext.apply(
                 {}, 
                 Ext.isObject(this.indexer) ? this.indexer : {}, {
                     xtype: 'indexbar',
                     dock: 'right',
-                    overlay: true,
-                    alphabet: true//,
-                    //store: this.indexStore
+                    overlay: true
                 });
 
             this.indexer = Ext.ComponentMgr.create(indexerConfig);
@@ -133,7 +124,7 @@ Surveypie.List = Ext.extend(Ext.List, {
             if (k !== this.visibeGroupNum && this.indexer)
                 this.indexer.fireEvent('updateIndex', {count:k});
             this.visibeGroupNum = k;
-            console.log('offsets', this.groupOffsets);
+            // console.log('offsets', this.groupOffsets);
         }
     },
 
