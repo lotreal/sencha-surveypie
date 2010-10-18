@@ -76,7 +76,7 @@ Surveypie.List = Ext.extend(Ext.List, {
     showPart: function(sn) {
         var type = this.survey.getPartType(sn);
         if (type == 'page') {
-            this.survey.getPage(sn).visibility = true;
+            this.survey.getPart(sn).visibility = true;
         } else {
             var part = Ext.get(sn);
             part.setStyle('display', '');

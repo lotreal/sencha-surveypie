@@ -1,4 +1,4 @@
-Ext.ns('Surveypie', 'Surveypie.ui', 'Surveypie.data');
+Ext.ns('Surveypie', 'Surveypie.ui', 'Surveypie.model');
 
 Surveypie.forEach = function(obj, fn, scope) {
     for ( prop in obj ) {
@@ -16,21 +16,22 @@ Ext.regModel('Surveypie', {
     fields: ['sn', 'subject', 'is_require', 'intro', 'html', 'visibility']
 });
 
-Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
-    constructor: function(define) {
-        this.define = define;
+// 调查表在内存里的数据模型，包括对 trigger 的处理
+Surveypie.model.Survey = Ext.extend(Ext.util.Observable, {
+    // save the trigger info
+    runtime: {
+        triggered: [],
+        show_by_trigger: {},
+        finish_by_trigger: []
+    },
+    current_page: -1,
 
+    constructor: function(define) {
         this.parts = define.parts;
         this.triggers = define.triggers;
         this.structure = define.structure;
+        this.title = define.title;
 
-        this.runtime = {
-            triggered: [],
-            show_by_trigger: {},
-            finish_by_trigger: []
-        };
-
-        this.current_page = -1;
         this.parseDefine(define);
         
         this.addEvents({
@@ -68,25 +69,17 @@ Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
             pages.push(page);
         }
         this.pages = pages;
-        console.log('define', this);
+        console.log('define', this, console);
         Ext.getDom('survey_body').innerHTML = '';
     },
 
     getTitle: function() {
-        return this.define.title;
+        return this.title;
     },
 
-    getPage: function(sn) {
-        for (var i = 0, n = this.pages.length; i < n; i++) {
-            var page = this.pages[i];
-            if (page.sn == sn) return page;
-        }
-        return null;
-    },
-
-    getOverview: function(sn) {
+    getPart: function(sn) {
         var part = this.parts[sn];
-        return [ part.subject || part.label || sn, '(', part.type, ')'].join('');
+        return part;
     },
 
     getNextPageIdx: function() {
@@ -135,7 +128,7 @@ Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
     },
 
     getPartType: function(sn) {
-        return this.define.parts[sn].type;
+        return this.parts[sn].type;
     },
 
     getTrigger: function(sn) {
@@ -172,7 +165,8 @@ Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
                 var option_sn = trigger['when'];
                 if (!show_by_trigger[assoc_part]) show_by_trigger[assoc_part] = [];
                 if (option_sn == sn) {
-                    show_by_trigger[assoc_part].push(option_sn);
+                    if (show_by_trigger[assoc_part].indexOf(option_sn) == -1)
+                        show_by_trigger[assoc_part].push(option_sn);
                 } else {
                     this.undoTrigger(option_sn, trigger);
                 }
@@ -181,7 +175,8 @@ Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
             var finish_by_trigger = this.runtime.finish_by_trigger,
                 option_sn = trigger['when'];
             if (option_sn == sn) {
-                finish_by_trigger.push(option_sn);
+                if (finish_by_trigger.indexOf(option_sn) == -1)
+                    finish_by_trigger.push(option_sn);
             } else {
                 this.undoTrigger(option_sn, trigger);
             }
@@ -216,10 +211,17 @@ Surveypie.data.Survey = Ext.extend(Ext.util.Observable, {
             console.log('set visibility', sn, this.getPartType(sn), visibility);
             this.fireEvent('changeVisibility', part);
         }
+    },
+
+
+    // debug info
+    getOverview: function(sn) {
+        var part = this.parts[sn];
+        return [ part.subject || part.label || sn, '(', part.type, ')'].join('');
     }
 });
 
-var survey = new Surveypie.data.Survey(response);
+var survey = new Surveypie.model.Survey(response);
 
 
 Surveypie.ui.Page = Ext.extend(Ext.Panel, {

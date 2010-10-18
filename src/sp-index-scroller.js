@@ -1,39 +1,57 @@
 Ext.ns('Surveypie');
 
 var Ticks = Ext.extend(Object, {
+    margin: 10,
+    ticks: {},
+    tick_height: 16,
+    last_highlight: -1,
+
+    indicator : {
+        el: null,
+        style: {
+            ani_start: {
+                "fill-opacity": 0.2, 
+                "stroke-opacity": 0.2
+            },
+            ani_end: {
+                "r": 8,
+                "fill-opacity": 0.6, 
+                "fill": "#666666",
+                "stroke": "orange", 
+                "stroke-width": 4,
+                "stroke-opacity": 1
+            },
+            ani_during: 300
+        }
+    },
+
     constructor: function(config) {
         var me = this;
         Ext.apply(me, config);
-
-        this.margin = 10;
-        this.ticks = {};
-        this.tick_height = 16;
-        this.last_highlight = -1;
     },
 
-    getPaper: function() {
-        if (!this.paper) this.paper = Raphael(this.container, width, height);
-        else this.paper.setSize(width, height);
+    setPaper: function(paper, width, height) {
+        if (paper) paper.setSize(width, height);
+        else paper =  Raphael(this.container, width, height);
 
-        this.paper.clear();
+        this.paper = paper;
+        this.width = width;
+        this.height = height;
+        return this.paper;
     },
 
     highlightTick: function(index) {
-        console.log('highlight', this.ticks, this.last_highlight);
-        if (this.last_highlight == index) return;
-        if (this.last_highlight > 0) {
-            var last_tick = this.ticks[this.last_highlight];
-            if (last_tick) {
-                last_tick.attr({
-                    "fill": '#333333'
-                });
-                // last_tick.hide();
-            }
-        }
+        index = index < 0 ? 0 : index;
+        var it = this.indicator.el, 
+            style = this.indicator.style,
+            cy = this.ticks[index].y;
 
-        var tick = this.ticks[index];
-        if (tick) this.makeActive(tick);
+        it.attr(style.ani_start);
+        it.attr({cy: cy});
+        it.animate(style.ani_end, this.ani_during);
+
         this.last_highlight = index;
+        console.log('highlightTick', this.ticks[index].y, index);
     },
 
     makeActive: function(tick) {
@@ -53,36 +71,44 @@ var Ticks = Ext.extend(Object, {
         return tick;
     },
 
-    drawTick: function(index) {
-        var k = parseInt(this.tick_height / this.step) * 2;
-        if (k > 0 && index % k !== 0) return (this.ticks[index] = null);
-
-        var x = this.width / 2,
-            y = this.margin + index * this.step,
-            t = this.paper.text(x, y, index + 1);
-
-        return (this.ticks[index] = this.makeNormal(t));
-    },
-
     drawTicks: function(width, height, num) {
-        this.setSize(width, height);
-
-        if (!this.paper) this.paper = Raphael(this.container, width, height);
-        else this.paper.setSize(width, height);
-
-        this.paper.clear();
+        var paper = this.setPaper(this.paper, width, height);
+        paper.clear();
 
         this.step = (height - this.margin * 2) / (num - 1);
-        console.log('tick step = ', this.step);
-        for (var i = 0, n = num; i < n; i++) {
-            var t = this.drawTick(i);
-        }
-        this.highlightTick(1);
-    },
 
-    setSize: function(width, height) {
-        this.width = width;
-        this.height = height;
+        var kk = parseInt(this.tick_height / this.step) * 2;
+
+        console.log('tick step = ', this.step);
+
+        var x = this.width / 2, y, ticks = [];
+        for (var i = 0, n = num; i < n; i++) {
+            y = this.margin + i * this.step;
+            ticks.push({x:x, y:y});
+        }
+
+        var it = paper.circle(ticks[0].x, ticks[0].y, 5);
+        it.attr(this.indicator.style.ani_end);
+        this.indicator.el = it;
+
+        for (var j = 0, k = ticks.length; j < k; j++) {
+            var t = ticks[j];
+            if (kk > 0 && j % kk !== 0) {
+                if (j == k-1) {
+                    var ttt = paper.circle(t.x, t.y, 3);
+                    ttt.attr({fill: '#666666'});
+                    t.el = ttt;
+                } else {
+                    t.el = null;
+                }
+            } else {
+                t.el = this.makeNormal(paper.text(t.x, t.y, j + 1));
+            }
+        }
+
+        this.ticks = ticks;
+        console.log('calc tick', ticks, this.last_highlight);
+        this.highlightTick(this.last_highlight);
     }
 });
 
@@ -134,6 +160,7 @@ Surveypie.IndexScroller = Ext.extend(Ext.Panel, {
             touchstart: this.onTouchStart,
             touchend: this.onTouchEnd,
             touchmove: this.onTouchMove,
+            tap: this.onTouchMove,
             scope: this
         });
     },
@@ -160,22 +187,10 @@ Surveypie.IndexScroller = Ext.extend(Ext.Panel, {
         this.ticks.drawTicks(canvas_width, canvas_height, dict.count);
 
 
-        // if (! this.paper) this.paper = Raphael(body.dom, canvas_width, canvas_height);
-        // else this.paper.setSize(canvas_width, canvas_height);
 
-        // var tick = body.createChild({
-        //     tag: 'div',
-        //     width: body.getWidth(),
-        //     height: canvas_height
-        // });
-
-        var paper = this.paper,
-            tick_count = dict.count,
+        var tick_count = dict.count,
             tick_margin = 10,
             step = (canvas_height - tick_margin * 2) / (tick_count - 1);
-
-        // paper.clear();
-        // console.log('create tick', 'body', body);
 
         var box = body.getPageBox();
         box.height = box.height - tick_margin * 2;
@@ -183,19 +198,6 @@ Surveypie.IndexScroller = Ext.extend(Ext.Panel, {
         box.bottom = box.bottom - tick_margin;
 
         this.tick_pagebox = box;
-
-
-        // for (var i = 0, n = tick_count; i < n; i++) {
-        //     var y = tick_margin + i * step;
-        //     // var circle = paper.circle(12.5, tick_margin + i * step, 5);
-        //     var t = paper.text(12.5, tick_margin + i * step, i+1);
-        //     t.attr({
-        //         "font-size":12, 
-        //         "font-weight":1000,
-        //         "fill": "#f00"
-        //     });
-        //     //t.attr("stroke", "#fff");
-        // }
     },
 
     // @private
