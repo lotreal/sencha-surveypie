@@ -1,6 +1,7 @@
 Ext.ns('Surveypie');
 
 Surveypie.List = Ext.extend(Ext.List, {
+    scroll: false,
     // @private
     initComponent : function() {
         if (this.indexer) {
@@ -42,7 +43,7 @@ Surveypie.List = Ext.extend(Ext.List, {
 
         this.parts = this.el.select('.part');
         this.nums = this.el.select('.part-num');
-
+        console.log('====', this.parts, this.nums);
         // this.groups = this.el.select('.x-list-group');
         // console.log('groups', this.groups);
 
@@ -181,6 +182,7 @@ Surveypie.List = Ext.extend(Ext.List, {
                 sn: record.get('sn'),
                 type: record.get('type'),
                 subject: record.get('subject'),
+                is_require: record.get('is_require'),
                 items: itemTpl.apply(record.data),
                 visibility: record.get('visibility')
             });

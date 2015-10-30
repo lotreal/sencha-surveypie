@@ -1,4 +1,66 @@
-Ext.ns('Surveypie', 'Surveypie.ui', 'Surveypie.model');
+Ext.ns('Surveypie', 'Surveypie.ui', 'Surveypie.model', 'Surveypie.layout');
+
+// 翻译指定文字
+function T(key) {
+    var dict = window.dict || {};
+    return dict.hasOwnProperty(key) ? dict[key] : key;
+}
+
+
+Surveypie.layout.FlowLayout = Ext.extend(Ext.layout.ContainerLayout, {
+    extraCls: '',
+    targetCls: '',
+    type: 'flow',
+    
+    // @private
+    onLayout : function() {
+        Surveypie.layout.FlowLayout.superclass.onLayout.call(this);
+
+        if (this.owner.items.length) {
+            var box = this.getTargetBox();
+            this.setItemBox(this.owner.items.get(0), box);
+        }
+    },
+
+    getTargetBox : function() {
+        var target = this.getTarget(),
+            size = target.getSize(),
+            padding = {
+                left: target.getPadding('l'),
+                right: target.getPadding('r'),
+                top: target.getPadding('t'),
+                bottom: target.getPadding('b')
+            }, 
+            border = {
+                left: target.getBorderWidth('l'),
+                right: target.getBorderWidth('r'),
+                top: target.getBorderWidth('t'),
+                bottom: target.getBorderWidth('b')
+            };
+            
+        return {
+            width: size.width- padding.left - padding.right - border.left - border.right,
+            height: size.height - padding.top - padding.bottom - border.top - border.bottom + 1000,
+            x: padding.left + border.left,
+            y: padding.top + border.top
+        };        
+    },
+    
+    // @private
+    setItemBox : function(item, box) {
+        if (item && box.height > 0) {
+            //box.width -= item.el.getMargin('lr');
+            box.width = null;
+            box.height -= item.el.getMargin('tb');
+            item.setSize(box);
+            item.setPosition(box);
+            console.log('setItemBox', item, box, '=====================');
+        }
+    }
+});
+
+Ext.regLayout('flow', Surveypie.layout.FlowLayout);
+
 
 Surveypie.forEach = function(obj, fn, scope) {
     for ( prop in obj ) {
@@ -53,24 +115,13 @@ Surveypie.model.Survey = Ext.extend(Ext.util.Observable, {
                 parts_data = [];
 
             for (var i = 0, n = parts_of_page_sns.length; i < n; i++) {
-                var part_sn = parts_of_page_sns[i],
-                    part = _parts[part_sn],
-                    part_node = Ext.get(part_sn), 
-                    html = part_node.getHTML(),
-                    visibility = part_node.getStyle('display') !== 'none';
-
-                part.html = html;
-                part.visibility = visibility;
-                parts.push(part);
+                parts.push(_parts[parts_of_page_sns[i]]);
             }
             page.parts = parts;
-            // page.visibility = _pages[page_sn];
-            this.parts[page_sn].visibility = _pages[page_sn];
             pages.push(page);
         }
         this.pages = pages;
         console.log('define', this, console);
-        Ext.getDom('survey_body').innerHTML = '';
     },
 
     getTitle: function() {
@@ -82,6 +133,7 @@ Surveypie.model.Survey = Ext.extend(Ext.util.Observable, {
         return part;
     },
 
+    // 得到下一页的相关信息
     getNextPageIdx: function() {
         if (this.runtime.finish_by_trigger.length > 0) return -1;
         for (var i = this.current_page + 1, n = this.pages.length; i < n; i++) {
@@ -131,6 +183,7 @@ Surveypie.model.Survey = Ext.extend(Ext.util.Observable, {
         return this.parts[sn].type;
     },
 
+    // 处理触发器
     getTrigger: function(sn) {
         var qsn = this.getQuestion(sn);
         if (!qsn) return false;
@@ -225,11 +278,12 @@ var survey = new Surveypie.model.Survey(response);
 
 
 Surveypie.ui.Page = Ext.extend(Ext.Panel, {
-    layout: Ext.is.Phone || true ? 'fit' : {
+    layout: Ext.is.Phone || true ? 'flow' : {
         type: 'vbox',
         align: 'center',
         pack: 'center'
     },
+    scroll: false,
     cls: 'demo-list',
     items: [],
 
@@ -242,11 +296,11 @@ Surveypie.ui.Page = Ext.extend(Ext.Panel, {
             xtype: 'sp_list',
             store: this.partStore,
             survey: this.survey,
-            tpl: '<tpl for="."><div class="intro">{intro}</div><div class="part-form">{html}</div></tpl>',
+            itemTpl: '<tpl for="."><div class="intro">{intro}</div><div class="part-form">{html}</div></tpl>',
             groupTpl : [
                 '<tpl for=".">',
                 '<div class="x-list-group part {type}" id="{sn}" <tpl if="!visibility">style="display:none;"</tpl>>',
-                '<h3 class="x-list-header question-subject"><b class="part-num"></b>{subject}</h3>',
+                '<h3 class="x-list-header question-subject"><span class="part-num"></span>{subject}<tpl if="is_require"> *</tpl></h3>',
                 '<div class="x-list-group-items">',
                 '{items}',
                 '</div>',
@@ -326,9 +380,11 @@ Surveypie.ui.Survey = Ext.extend(Ext.Panel, {
     },
 
     showNextPage: function() {
+        // this.loading(true);
         var page = this.survey.getNextPage();
-        this.setCard(this.getPageUI(page));
+        this.setActiveItem(this.getPageUI(page));
         this.updateGuideButton();
+        // this.loading(false);
     },
 
     updateGuideButton: function() {
@@ -356,7 +412,30 @@ Surveypie.ui.Survey = Ext.extend(Ext.Panel, {
             icon  : Ext.MessageBox.QUESTION,
             prompt: true
         });
+    }, 
+
+    loading: function(flag) {
+        if (!this.popup) {
+            this.popup = new Ext.Panel({
+                floating: true,
+                modal: true,
+                centered: true,
+                width: 300,
+                styleHtmlContent: true,
+                html: '<p>This is a modal, centered and floating panel. hideOnMaskTap is true by default so ' +
+                    'we can tap anywhere outside the overlay to hide it.</p>',
+                dockedItems: [{
+                    dock: 'top',
+                    xtype: 'toolbar',
+                    title: 'Loading'
+                }],
+                scroll: 'vertical'
+            });
+        }
+        if (flag) this.popup.show();
+        else this.popup.hide('fade');
     }
+
 });
 
 Surveypie.Main = {
@@ -371,8 +450,23 @@ Ext.setup({
     phoneStartupScreen: 'resources/img/phone_startup.png',
     icon: 'resources/img/icon.png',
     glossOnIcon: false,
-    
+    fullscreen: false,
     onReady: function() {
         Surveypie.Main.init();
+        return true; 
+    },
+    onReady1: function() {
+        // Ext.stretchEl.remove();
+
+        var ct = Ext.get(Ext.stretchEl).createChild({
+            cls: 'sp-test-flow'
+        });
+        console.log(ct);
+        ct.setHTML('<p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p><p>abc</p>');
+        //Surveypie.Main.init();
     }
 });
+var kk = function() {
+    return true;
+};
+Ext.onReady(kk);
